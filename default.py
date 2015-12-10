@@ -19,6 +19,10 @@ from xml.dom.minidom import Document
 from t0mm0.common.addon import Addon
 import commands
 import jsunpack
+import socket
+
+timeout = 5
+socket.setdefaulttimeout(timeout)
 
 
 __settings__ = xbmcaddon.Addon(id='plugin.video.tvbyy')
@@ -71,11 +75,11 @@ def GetContent(url,retry=0):
 			rcontent=eval("convertascii("+encstring[1]+")").replace("\/","/") 
        return rcontent
     except:
-        if(retry == 1):
+        if(retry >= 5):
            d = xbmcgui.Dialog()
-           d.ok(url,"Can't Connect to site",'Try again in a moment')
+           d.ok(url,"暫時無法連接",'請重新嘗試')
         else:
-            GetContent(url,1)
+            GetContent(url,retry+1)
 
 try:
 
@@ -435,8 +439,9 @@ def PLAYLIST_VIDEOLINKS(vidlist,name):
         xbmcPlayer = xbmc.Player()
         xbmcPlayer.play(playList)
         if not xbmcPlayer.isPlayingVideo():
-                d = xbmcgui.Dialog()
-                d.ok('videourl: ' + str(playList), 'One or more of the playlist items','Check links individually.')
+                xbmcPlayer.play(playList)
+                #d = xbmcgui.Dialog()
+                #d.ok('videourl: ' + str(playList), 'One or more of the playlist items','Check links individually.')
         return ok
 		
 
@@ -445,40 +450,6 @@ def PLAYLIST_VIDEOLINKS(vidlist,name):
 def add_contextsearchmenu(title, video_type):
     title=urllib.quote(title.encode('utf-8', 'ignore'))
     contextmenuitems = []
-    #if os.path.exists(xbmc.translatePath("special://home/addons/") + 'plugin.video.1channel'):
-    #    contextmenuitems.append(('Search 1channel',
-    #                             'XBMC.Container.Update(%s?mode=%s&section=%s&query=%s)' % (
-    #                                 'plugin://plugin.video.1channel/', '7000',video_type, title)))
-    if os.path.exists(xbmc.translatePath("special://home/addons/") + 'plugin.video.icefilms'):
-        contextmenuitems.append(('Search Icefilms',
-                                 'XBMC.Container.Update(%s?mode=555&url=%s&search=%s&nextPage=%s)' % (
-                                     'plugin://plugin.video.icefilms/', 'http://www.icefilms.info/', title, '1')))
-    if os.path.exists(xbmc.translatePath("special://home/addons/") + 'plugin.video.movie25'):
-        contextmenuitems.append(('Search Mash Up',
-                                 'XBMC.Container.Update(%s?mode=%s&url=%s)' % (
-                                     'plugin://plugin.video.movie25/', '4', title)))
-    if os.path.exists(xbmc.translatePath("special://home/addons/") + 'plugin.video.tubeplus'):
-        if video_type == 'tv':
-            section = 'None'
-            serurl='http://www.tubeplus.me/search/tv-shows/%s/'%(title)
-        else:
-            serurl='http://www.tubeplus.me/search/movies/"%s"/'%(title)
-            section = 'movie'
-       
-        contextmenuitems.append(('Search tubeplus', 'XBMC.Container.Update(%s?mode=150&types=%s&url=%s&linkback=latesttv)' % (
-            'plugin://plugin.video.tubeplus/', section, serurl)))
-    if os.path.exists(xbmc.translatePath("special://home/addons/") + 'plugin.video.tvlinks'):
-        if video_type == 'tv':
-            contextmenuitems.append(('Search tvlinks', 'XBMC.Container.Update(%s?mode=Search&query=%s)' % (
-                'plugin://plugin.video.tvlinks/', title)))
-    if os.path.exists(xbmc.translatePath("special://home/addons/") + 'plugin.video.solarmovie'):
-        if video_type == 'tv':
-            section = 'tv-shows'
-        else:
-            section = 'movies'
-        contextmenuitems.append(('Search solarmovie', 'XBMC.Container.Update(%s?mode=Search&section=%s&query=%s)' % (
-            'plugin://plugin.video.solarmovie/', section, title)))
-
     return contextmenuitems
 	
 
@@ -495,16 +466,9 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
         return
     link = ''.join(link.splitlines()).replace('\'','"')
 
-    # borrow from 1channel requires you to have 1channel
-    win = xbmcgui.Window(10000)
-    win.setProperty('1ch.playing.title', movieinfo)
-    win.setProperty('1ch.playing.season', str(3))
-    win.setProperty('1ch.playing.episode', str(4))
-    # end 1channel code
     redirlink=url
 
     try:
-    #if True:
         if (redirlink.find("tvbyy.com/player/ning/api") > -1):
 
                 vidcontent = GetContent(url)
@@ -564,15 +528,11 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
 
             
     except:
-                if(redirlink.find("putlocker.com") > -1 or redirlink.find("sockshare.com") > -1):
-                        redir = redirlink.split("/file/")
-                        redirlink = redir[0] +"/file/" + redir[1].upper()
                 sources = []
                 label=name
                 hosted_media = urlresolver.HostedMediaFile(url=redirlink, title=label)
                 sources.append(hosted_media)
                 source = urlresolver.choose_source(sources)
-                print "inresolver=" + redirlink
                 if source:
                         vidlink = source.resolve()
     dialog.close()
@@ -745,24 +705,32 @@ def SEARCH(url,type):
                 ListShows(url)
             elif(type == "id"):
                 url = strdomain+'/vod/'+searchText+'.html'
-                Episodes(url)
+                Episodes(url,1)
 		
 
 
-def Episodes(url,retry=0):
+def Episodes(url,searchbyid=0,retry=0):
         link = GetContent(url)
         try:
             link =link.encode("UTF-8")
         except: pass
 
         if(link == None and retry != 1):
-            Episodes(url,1)
+            Episodes(url,searchbyid,1)
             return
         newlink = ''.join(link.splitlines()).replace('\t','')
         soup = BeautifulSoup(newlink)
         vidcontent=soup.findAll('div', {"class" :re.compile('play-list')})
         vidimage=soup.findAll('div', {"class" :re.compile('pic')})[0]
         vidinfo=soup.findAll('div', {"class" :re.compile('info')})[0]
+
+        if(searchbyid == 1):
+            searchText = urllib.quote_plus(vidinfo.h1.contents[0].strip().encode('utf-8', 'ignore'))
+            if(len(searchText.strip())>0):
+                url = strdomain+'/index.php?m=vod-search&wd='+searchText
+                ListShows(url)
+                return                
+            
 
         for item in vidcontent[0].findAll('li'):
 			if(item.span==None):
