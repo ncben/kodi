@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# based on dknlght's kodi addon https://github.com/dknlght/dkodi
 
 import httplib
 import urlparse,urllib,urllib2,re,sys
@@ -913,12 +914,6 @@ if mode==None or url==None or len(url)<1:
         HOME()
 elif mode==3:
         playVideo(url,name,movieinfo)
-elif mode==4:
-        Mirrors(url,name) 
-elif mode==5:
-        GenreList(url,18)
-elif mode==6:
-        GenreList(url,19)
 elif mode==8:
         Episodes(url)
 elif mode==9:
@@ -927,10 +922,6 @@ elif mode==10:
         SEARCH(url,"id")
 elif mode==15:
         ListCategories(url)
-elif mode==16:
-        ListAZ(url,26)
-elif mode==17:
-        ListAZ(url,27)
 elif mode==18:
         ListShows(url)
 elif mode==19:
@@ -941,13 +932,11 @@ elif mode==22:
         SaveFav(vidtype, name, url, imageurl)
 elif mode==23:
         DeleteFav(name,url)
-elif mode==24:
-        ListFavorites()
 elif mode==25:
         BrowseFavorites(url)
 elif mode==28:
         PLAYLIST_VIDEOLINKS(url,name)
 elif mode==32:
-		SensenGetVideo(url)
+	SensenGetVideo(url)
 
 xbmcplugin.endOfDirectory(int(sysarg))
