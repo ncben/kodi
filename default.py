@@ -29,25 +29,8 @@ __settings__ = xbmcaddon.Addon(id='plugin.video.tvbyy')
 home = __settings__.getAddonInfo('path')
 datapath = xbmc.translatePath(os.path.join(home, 'resources', ''))
 strdomain ="http://tvbyy.com"
-AZ_DIRECTORIES = ['0','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y', 'Z']
 net = Net()
-class InputWindow(xbmcgui.WindowDialog):# Cheers to Bastardsmkr code already done in Putlocker PRO resolver.
-    def __init__(self, *args, **kwargs):
-        self.cptloc = kwargs.get('captcha')
-        self.img = xbmcgui.ControlImage(335,20,624,180,self.cptloc)
-        self.addControl(self.img)
-        self.kbd = xbmc.Keyboard()
 
-    def get(self):
-        self.show()
-        self.kbd.doModal()
-        if (self.kbd.isConfirmed()):
-            text = self.kbd.getText()
-            self.close()
-            return text
-        self.close()
-        return False
-		
 def convertascii(strInput, param2, param3):
 	strresult=""
 	localvar = strInput
@@ -130,24 +113,6 @@ def SaveData(SQLStatement): #8888
     db.commit()
     db.close()
 
-def HostResolver(url):
-		print "in HostResolver"
-		parsed_uri = urlparse.urlparse(url)
-		server=str(parsed_uri.netloc)
-		server=server.split(".")
-		if(len(server)>2):
-			server=server[1]
-		else:
-			server=server[0]
-		server=server.replace("180upload","one80upload")
-		exec "from servers import "+server+" as server_connector"
-		rtnstatus,msg = server_connector.test_video_exists( page_url=url )
-		if(rtnstatus):
-			video_urls = server_connector.get_video_url( page_url=url , video_password="" )
-			return video_urls[0][1]
-		else:
-			return ""
-		
 def SaveFav(fav_type, name, url, img):
         if fav_type == '': fav_type = getVideotype(url)
         statement  = 'INSERT INTO favorites (type, name, url, imgurl) VALUES (%s,%s,%s,%s)'
@@ -272,7 +237,7 @@ def GetMenu(retry=0):
 				addDir(vname,link,15,"")
 				
 		
-def SensenGetVideo(url, retry=0):
+def GetVideo(url, retry=0):
     
         link = GetContent(url)
         try:
@@ -280,7 +245,7 @@ def SensenGetVideo(url, retry=0):
         except: pass
 
         if(link == None and retry != 1):
-            SensenGetVideo(url, 1)
+            GetVideo(url, 1)
             return
         newlink = ''.join(link.splitlines()).replace('\t','')
         
@@ -290,7 +255,7 @@ def SensenGetVideo(url, retry=0):
         script = GetContent(strdomain+scriptcontent[0].script["src"])
 
         if(script == None and retry != 1):
-            SensenGetVideo(url, 1)
+            GetVideo(url, 1)
             return
         
         urlarr = script.split('mac_url=unescape(\'')
@@ -364,7 +329,7 @@ def SensenGetVideo(url, retry=0):
             except: pass
 
             if(iframelink == None and retry != 1):
-                SensenGetVideo(url,1)
+                GetVideo(url,1)
                 return
         
             newiframelink = ''.join(iframelink.splitlines()).replace('\t','')
@@ -440,8 +405,6 @@ def PLAYLIST_VIDEOLINKS(vidlist,name):
         xbmcPlayer.play(playList)
         if not xbmcPlayer.isPlayingVideo():
                 xbmcPlayer.play(playList)
-                #d = xbmcgui.Dialog()
-                #d.ok('videourl: ' + str(playList), 'One or more of the playlist items','Check links individually.')
         return ok
 		
 
@@ -757,7 +720,7 @@ def Episodes(url,searchbyid=0,retry=0):
 
 
 	if len(vidcontent[0].findAll('li')) == 0:
-		SensenGetVideo(url)
+		GetVideo(url)
 
 
 
@@ -905,6 +868,6 @@ elif mode==25:
 elif mode==28:
         PLAYLIST_VIDEOLINKS(url,name)
 elif mode==32:
-	SensenGetVideo(url)
+	GetVideo(url)
 
 xbmcplugin.endOfDirectory(int(sysarg))
