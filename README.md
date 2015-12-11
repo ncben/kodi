@@ -16,3 +16,9 @@ Edit your DNS by updating your host file on your computer, rooted Android device
 183.136.232.199 wwdwt.tudou.com
 
 183.136.232.199 ad2f.tudou.com
+
+Search by keyword feature:
+Works for shows with English name only. No Chinese keyboard available.
+
+Search by ID feature:
+Input the name of the .html page of the show in the URL. This is a 1 to 5 digit number.
