@@ -224,6 +224,7 @@ def GetMenu(retry=0):
         soup  = BeautifulSoup(newlink)
         vidcontent=soup.findAll('div', {"class" : "nav"})
         for item in vidcontent[0].findAll('li'):
+                if(item != None and item.a != None and item.a['href'] != None):
 			link = item.a['href'].encode('utf-8', 'ignore')
 			vname=str(item.a.contents[0]).strip()
 			print vname.strip()
