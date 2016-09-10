@@ -1,4 +1,4 @@
-# tvbyy.com addon for Kodi
+# tvbyy.com (now yuezj.com) addon for Kodi
 Version 0.02
 
 Credit to dknlght (https://github.com/dknlght/dkodi)
