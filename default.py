@@ -2,6 +2,7 @@
 # based on dknlght's kodi addon https://github.com/dknlght/dkodi
 
 import httplib
+import HTMLParser
 import urlparse,urllib,urllib2,re,sys
 import cookielib,os,string,cookielib,StringIO,gzip
 import os,time,base64,logging
@@ -21,14 +22,14 @@ import commands
 import jsunpack
 import socket
 
-timeout = 5
+timeout = 60
 socket.setdefaulttimeout(timeout)
 
 
 __settings__ = xbmcaddon.Addon(id='plugin.video.tvbyy')
 home = __settings__.getAddonInfo('path')
 datapath = xbmc.translatePath(os.path.join(home, 'resources', ''))
-strdomain ="http://tvbyy.com"
+strdomain ="http://www.yuezj.com"
 net = Net()
 
 def convertascii(strInput, param2, param3):
@@ -88,7 +89,7 @@ except:
         from pysqlite2 import dbapi2 as database
         addon.log('pysqlite2 as DB engine')
     DB = 'sqlite'
-    db_dir = os.path.join(xbmc.translatePath("special://database"), 'tvbyyfav.db')
+    db_dir = os.path.join(xbmc.translatePath("special://database"), 'yuezjfav.db')
 
 def initDatabase():
     if DB == 'mysql':
@@ -134,9 +135,9 @@ def SaveFav(fav_type, name, url, img):
         db.close()
 		
 def AddFavContext(vidtype, vidurl, vidname, vidimg):
-        runstring = 'RunScript(plugin.video.tvbyy,%s,?mode=22&vidtype=%s&name=%s&imageurl=%s&url=%s)' %(sys.argv[1],vidtype,vidname.decode('utf-8', 'ignore'),vidimg,vidurl)
+        runstring = 'RunScript(plugin.video.yuezj,%s,?mode=22&vidtype=%s&name=%s&imageurl=%s&url=%s)' %(sys.argv[1],vidtype,vidname.decode('utf-8', 'ignore'),vidimg,vidurl)
         cm = add_contextsearchmenu(vidname.decode('utf-8', 'ignore'),vidtype)
-        cm.append(('Add to tvbyy Favorites', runstring))
+        cm.append(('Add to yuezj Favorites', runstring))
         return cm
 
 def BrowseFavorites(section):
@@ -155,7 +156,7 @@ def BrowseFavorites(section):
         vtype= row[0]
         fanart = ''
         cm = add_contextsearchmenu(title,vtype)
-        remfavstring = 'RunScript(plugin.video.tvbyy,%s,?mode=23&name=%s&url=%s)' %(sys.argv[1],urllib.quote_plus(title.encode('utf-8', 'ignore')),urllib.quote_plus(favurl.encode('utf-8', 'ignore')))
+        remfavstring = 'RunScript(plugin.video.yuezj,%s,?mode=23&name=%s&url=%s)' %(sys.argv[1],urllib.quote_plus(title.encode('utf-8', 'ignore')),urllib.quote_plus(favurl.encode('utf-8', 'ignore')))
         cm.append(('Remove from Favorites', remfavstring))
         if(vtype=="tvshow"):
 			nextmode=8
@@ -179,8 +180,8 @@ def DeleteFav(name,url):
 		
 def HOME():
         GetMenu()
-        addDir('搜尋（關鍵字）',strdomain,9,'')
-        addDir('搜尋（ID)',strdomain,10,'')
+        #addDir('搜尋（關鍵字）',strdomain,9,'')
+        addDir('直接輸入ID',strdomain,10,'')
         addDir('我的最愛','tvshow',25,'')
 		
 def ListCategories(url,retry=0):
@@ -196,13 +197,13 @@ def ListCategories(url,retry=0):
 
         newlink = ''.join(link.splitlines()).replace('\t','')
         soup = BeautifulSoup(newlink)
-        vidcontent=soup.findAll('div', {"class" : "main"})
+        vidcontent=soup.findAll('div', {"class" : "type_search"})
 
 	alreadyaddedall = 0
 
-        for item in vidcontent[0].findAll('li'):
-			link = item.a['href'].encode('utf-8', 'ignore')
-			vname=str(item.a.contents[0]).strip()
+        for item in vidcontent[0].findAll('ul')[0].findAll('li')[0].findAll('a'):
+			link = item['href'].encode('utf-8', 'ignore')
+			vname=str(item.contents[0]).strip()
 
                         if(vname != '国产剧'):
                             if(vname != '全部' or (vname == '全部' and alreadyaddedall == 0)):
@@ -222,7 +223,7 @@ def GetMenu(retry=0):
         
         newlink = ''.join(link.splitlines()).replace('\t','')
         soup  = BeautifulSoup(newlink)
-        vidcontent=soup.findAll('div', {"class" : "nav"})
+        vidcontent=soup.findAll('ul', {"id" : "cydy-nav"})
         for item in vidcontent[0].findAll('li'):
                 if(item != None and item.a != None and item.a['href'] != None):
 			link = item.a['href'].encode('utf-8', 'ignore')
@@ -234,11 +235,12 @@ def GetMenu(retry=0):
                                addDir(vname,strdomain+link,19,"")
                                continue
                             
-			if(vname.strip() != '首页'):
+			if(vname.strip() != '首页' and vname.strip() != '简洁版'  and vname.strip() != '更多'  and vname.strip() != '地图'):
 				addDir(vname,link,15,"")
 				
 		
 def GetVideo(url, retry=0):
+
     
         link = GetContent(url)
         try:
@@ -251,7 +253,7 @@ def GetVideo(url, retry=0):
         newlink = ''.join(link.splitlines()).replace('\t','')
         
         soup = BeautifulSoup(newlink)
-        scriptcontent=soup.findAll('div', {"class" : "l"})
+        scriptcontent=soup.findAll('div', {"class" : "clear pl-play js-addDanmu"})
 
         script = GetContent(strdomain+scriptcontent[0].script["src"])
 
@@ -262,11 +264,14 @@ def GetVideo(url, retry=0):
         urlarr = script.split('mac_url=unescape(\'')
 
         thisNum = url.split("-")
+        thisIndex = thisNum[len(thisNum)-2]
         thisNum = thisNum[len(thisNum)-1]
         thisNum = thisNum.split(".")
         thisNum = thisNum[0]
 
+
         vid=''
+        iframeurl=''
 
         if(len(urlarr) == 2):
             urlinfo = urlarr[1].split('\')')
@@ -281,25 +286,59 @@ def GetVideo(url, retry=0):
 
             urldata = urlinfo.split('$$$')
 
+            i=1
+            
             for x in urldata:
-                validsource= (x.find("ftp://") == -1 and x.find("jjhd://") == -1 and x.find("ffhd://") == -1);
-                if(x.find("tudou") > -1 or validsource or mixedsources == 0):
-                    urlepisode= x.split("#")
+                
+                #validsource= (x.find("ftp://") == -1 and x.find("jjhd://") == -1 and x.find("ffhd://") == -1);
+                #if(x.find("tudou") > -1 or validsource or mixedsources == 0):
+
+
+                
+                if i == int(thisIndex):
+                
                     j=1
-                    for y in urlepisode:
-                        urlepisodeinfo = y.split("$")
-                        if(int(thisNum) == j):
-                            if(urlepisodeinfo[1].isdigit()):
-                                iframeurl = strdomain+"/player/tudou_t.php?u="+urlepisodeinfo[1]+"&f=tudou&w=100%&h=453"
-                                vid=urlepisodeinfo[1]
-                            else:
-                                iframeurl = strdomain+"/player/player.php?vid="+urlepisodeinfo[1]
-                                vid=urlepisodeinfo[1]
-                                break
-                        j=j+1
                     
+                    urlepisode= x.split("#")
+                    
+                    for y in urlepisode:
+
+                        
+                        if(int(thisNum) == j):
+                            urlepisodeinfo = y.split("$")
+                            if(len(urlepisodeinfo) > 2):
+                                    if(urlepisodeinfo[2] == "tudou"):
+                                        iframeurl = strdomain+"/player/tudou_t.php?u="+urlepisodeinfo[1]+"&f=tudou&w=100%&h=453"
+                                        vid=urlepisodeinfo[1]
+                                        
+                                    elif(urlepisodeinfo[2] == "yky"):
+                                        iframeurl = "http://api.365sky.net/mdparse/url.php?xml="+urlepisodeinfo[1]+"&type=acfun&hd=gq&wap=0&siteuser=123"
+                                        vid=urlepisodeinfo[1]
+                                        
+                                    else:
+                                        iframeurl = strdomain+"/player/player.php?vid="+urlepisodeinfo[1]
+                                        vid=urlepisodeinfo[1]
+                                    break
+                            else:
+                                    if(urlepisodeinfo[1].isdigit()):
+                                        iframeurl = strdomain+"/player/tudou_t.php?u="+urlepisodeinfo[1]+"&f=tudou&w=100%&h=453"
+                                        vid=urlepisodeinfo[1]
+                                    elif(urlepisodeinfo[1].endswith("==")):
+                                        iframeurl = "http://api.365sky.net/mdparse/url.php?xml="+urlepisodeinfo[1]+"&type=acfun&hd=gq&wap=0&siteuser=123"
+                                        vid=urlepisodeinfo[1]
+
+                                    else:
+                                        iframeurl = strdomain+"/player/player.php?vid="+urlepisodeinfo[1]
+                                        vid=urlepisodeinfo[1]
+                                    break
+                                            
+                        j=j+1
+                i=i+1
+                    
+
         
         if(iframeurl.find("/player/player.php?vid=") > -1):
+
 
             xmlurl=strdomain+"/player/ning/api/?skey="+vid+"_nly"
 
@@ -320,33 +359,91 @@ def GetVideo(url, retry=0):
             for defa in xmldefatagsarr:
                 addLink(xmldefttagsarr[j],xmlflink.encode('utf-8', 'ignore')+defa.encode('utf-8', 'ignore'),3,"")
                 j=j+1
-            
 
-        if(iframeurl.find("/player/tudou_t.php") > -1):
+        iframelink = GetContent(iframeurl)
 
-            iframelink = GetContent(iframeurl)
-            try:
-                iframelink =iframelink.encode("UTF-8")
-            except: pass
+        try:
+                 iframelink =iframelink.encode("UTF-8")
 
-            if(iframelink == None and retry != 1):
+        except: pass
+        if(iframelink == None and retry != 1):
                 GetVideo(url,1)
                 return
-        
-            newiframelink = ''.join(iframelink.splitlines()).replace('\t','')
 
-            newiframelinkarr = newiframelink.split("tudou_tvbyy.php")
+        
+        newiframelink = ''.join(iframelink.splitlines()).replace('\t','')
+
+            
+        if(newiframelink.find("api.ktkkt") > -1):
+
+
+            newiframelinkarr1 = newiframelink.split("api.ktkkt")
+            newiframelinkdomainarr1 = newiframelinkarr1[0].split("'")
+            newiframelinkdomain1 = newiframelinkdomainarr1[len(newiframelinkdomainarr1)-1]
+            newiframelinkparamsarr1 = newiframelinkarr1[1].split("'")
+            newiframelinkparams1 = newiframelinkparamsarr1[0]
+
+
+            videolinkm=newiframelinkdomain1+"api.ktkkt"+newiframelinkparams1
+
+
+            addLink("H264",videolinkm.encode('utf-8', 'ignore'),3,"")
+
+        if(newiframelink.find("365sky") > -1):
+
+            newiframelinkarr2 = newiframelink.split("365sky")
+            newiframelinkdomainarr2 = newiframelinkarr2[0].split("\"")
+            newiframelinkdomain2 = newiframelinkdomainarr2[len(newiframelinkdomainarr2)-1]
+            newiframelinkparamsarr2 = newiframelinkarr2[1].split("\"")
+            newiframelinkparams2 = newiframelinkparamsarr2[0]
+
+
+            videolinkms=newiframelinkdomain2+"365sky"+newiframelinkparams2
+
+
+ #           addLink("365sky",videolinkms.encode('utf-8', 'ignore'),3,"")
+
+
+        if(iframeurl.find("api.365sky") > -1):
+
+            xmllink = GetContent(iframeurl)
+
+
+            xmldefatags = re.compile('defa-&gt;["\']?([^>^"^\']+)["\']?[^>]*}{').findall(xmllink)
+            xmldefttags = re.compile('deft-&gt;["\']?([^>^"^\']+)["\']?[^>]*}').findall(xmllink)
+
+
+
+            xmldefatagsarr = xmldefatags[0].split("|")
+            xmldefttagsarr = xmldefttags[0].split("|")
+
+            j=0
+            for defa in xmldefatagsarr:
+                addLink(xmldefttagsarr[j],"http://api.365sky.net/mdparse/url.php?"+HTMLParser.HTMLParser().unescape(defa),3,"")
+                j=j+1
+                
+        if(iframeurl.find("/player/tudou_t.php") > -1):
+
+ 
+        
+
+
+            newiframelinkarr = newiframelink.split("tudou_t.php")
             newiframelinkdomainarr = newiframelinkarr[0].split("\"")
             newiframelinkdomain = newiframelinkdomainarr[len(newiframelinkdomainarr)-1]
             newiframelinkparamsarr = newiframelinkarr[1].split("\"")
             newiframelinkparams = newiframelinkparamsarr[0]
 
-            videolink=newiframelinkdomain+"tudou_tvbyy.php"+newiframelinkparams
+            videolink=newiframelinkdomain+"tudou_t.php"+newiframelinkparams
+
 
             videolinkcontent = GetContent(videolink)
 
+
 	    xmlrawlink = re.compile('<embed [^>]*flashvars=["\']?([^>^"^\']+)["\']?[^>]*>').findall(videolinkcontent)
 
+            if(len(xmlrawlink) < 1):
+                    return
             xmlrawlinkarr = xmlrawlink[0].split("a=")
 
             xmlrawlinkparam = xmlrawlinkarr[len(xmlrawlinkarr)-1]
@@ -358,6 +455,7 @@ def GetVideo(url, retry=0):
             vlink= xmldomain.encode('utf-8', 'ignore')+xmlrawlinkurl.encode('utf-8', 'ignore')
 
             xmllink = GetContent(xmldomain+xmlrawlinkurl)
+
 
             xmldefatags = re.compile('defa->["\']?([^>^"^\']+)["\']?[^>]*}').findall(xmllink)
             xmldefttags = re.compile('deft->["\']?([^>^"^\']+)["\']?[^>]*}').findall(xmllink)
@@ -418,13 +516,17 @@ def add_contextsearchmenu(title, video_type):
 	
 
 def ParseVideoLink(url,name,movieinfo,retry=0):
+
+    useragent = "|&User-Agent="+urllib.quote_plus("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.73 Safari/537.36");
+
     dialog = xbmcgui.DialogProgress()
     dialog.create('加載中', '正在加載中...')       
     dialog.update(0)
     if movieinfo=="direct":
 		return url
     link =GetContent(url)
-
+    
+    
     if(link == None and retry != 1):
         ParseVideoLink(url, name, movieinfo,1)
         return
@@ -432,8 +534,9 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
 
     redirlink=url
 
+
     try:
-        if (redirlink.find("tvbyy.com/player/ning/api") > -1):
+        if (redirlink.find("video.php") > -1):
 
                 vidcontent = GetContent(url)
 
@@ -446,7 +549,61 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
                     for v in vidlinks:
                         soup = BeautifulSoup(vidlinks[j])
                         for cd in soup.findAll(text=True):
-                            vidlinks[j] = cd
+                            vidlinks[j] = cd+useragent
+                        
+                        j=j+1
+
+                    vidlink=','.join(vidlinks)
+                    
+
+                else:
+                    soup = BeautifulSoup(vidlinks[0])
+
+                    for cd in soup.findAll(text=True):
+                        print "cd:"+ cd
+                        vidlink = cd+useragent
+
+                        
+        
+        elif (redirlink.find("ktkkt") > -1):
+
+                vidcontent = GetContent(url)
+
+
+                newlink = ''.join(vidcontent.splitlines()).replace('\t','')
+        
+                soup = BeautifulSoup(newlink)
+
+                vidcontent=soup.findAll('video')
+
+
+                vidlinkrdr = vidcontent[0]['src']
+
+                if(vidlinkrdr.find(".mp4") > -1):
+                        vidlink = vidlinkrdr+useragent
+                else:
+
+
+                        f = urllib2.urlopen(vidlinkrdr)
+                        vidlink = f.geturl()+useragent
+
+
+ 
+    
+        elif (redirlink.find("365sky") > -1):
+
+                vidcontent = GetContent(url)
+
+                vidlinks=re.compile('<file>(.+?)</file>').findall(vidcontent)
+
+                vidlink = ''
+                
+                if(len(vidlinks)>1):
+                    j=0
+                    for v in vidlinks:
+                        soup = BeautifulSoup(vidlinks[j])
+                        for cd in soup.findAll(text=True):
+                            vidlinks[j] = cd+useragent
                         
                         j=j+1
 
@@ -460,7 +617,8 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
                         print "cd:"+ cd
                         vidlink = cd
 
-        
+ 
+
         elif (redirlink.find("web321") > -1 and redirlink.find("User-Agent") < 0):
  
                 vidcontent = GetContent(url)
@@ -469,7 +627,6 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
 
                 vidlink = ''
     
-                useragent = "|&User-Agent="+urllib.quote_plus("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.73 Safari/537.36");
 
                 
                 if(len(vidlinks)>1):
@@ -601,6 +758,7 @@ def ListLatest(url,retry=0):
 		
 		
 def ListShows(url,retry=0):
+        print url
         link = GetContent(url)
         try:
             link =link.encode("UTF-8")
@@ -615,31 +773,33 @@ def ListShows(url,retry=0):
         soup = BeautifulSoup(newlink)
 
         if(url.find("time.html") < 0 and url.find("new.html") < 0):
-            vidcontent=soup.findAll('div', {"class" : "left"})
+            vidcontent=soup.findAll('div', {"class" : "imgListWrp"})[0].findAll('div', {"class" : "imglist02 cl"})
         else:
             ListLatest(url)
             return
-        for item in vidcontent[0].findAll('dl'):
+        for item in vidcontent[0].findAll('div', {"class":"imgItemWrp"}):
 
-                        dt = item.dt
-                        dd = item.dd
-			if(item.has_key("class")==False):
-                                ddp = dd.findAll('p')
+
+
+                        dd = item.findAll('div', {"class" : "imgItem"})[0]
+                        ddt = item.findAll('div', {"class" : "des toh"})
+                        ddp = item.findAll('div', {"class" : "nameWrp toh"})
+
  
-				if(dd.p != None and dd.p.a != None):
-					vlink = dd.p.a['href'].encode('utf-8', 'ignore')
-					vname=dd.p.a.contents[0].encode('utf-8', 'ignore')
-					vimg=strdomain+dt.a.img["src"]
+			if(dd.a != None):
+					vlink = dd.a['href'].encode('utf-8', 'ignore')
+					vname=ddp[0].a.contents[0].encode('utf-8', 'ignore')
+					vimg=strdomain+dd.a.img["src"]
 					vplot=""
-					if(len(ddp[1].contents)>0):
+					if(len(ddt) > 0 and ddt[0].a != None and len(ddt[0].a.contents)>0):
                                                 ddpcontent = ''
-                                                if(ddp[1].contents[0] !=  None):
-                                                        ddpcontent += str(ddp[1].contents[0]).strip()
-                                                        ddpcontent += str(ddp[1].contents[1]).strip()
+                                                if(ddp[0].contents[0] !=  None):
+                                                        ddpcontent += str(ddp[0].contents[0]).strip()
+                                                        ddpcontent += str(ddp[0].contents[1]).strip()
                                                 ddpcontentsub = re.sub('<[^<]+?>', '', ddpcontent)
 						vplot=unicode(ddpcontentsub, "utf-8").encode('utf-8', 'ignore')
 					addDirContext(vname,strdomain+vlink,8,vimg,vplot,"tvshow")
-        navcontent=soup.findAll('div', {"class" : "page1"})
+        navcontent=soup.findAll('div', {"class" : "pagination m_pagination selfinitModule"})
         if(len(navcontent)>0):
 			for item in navcontent[0].findAll('a'):
 				vlink=item["href"]
@@ -684,23 +844,20 @@ def Episodes(url,searchbyid=0,retry=0):
             return
         newlink = ''.join(link.splitlines()).replace('\t','')
         soup = BeautifulSoup(newlink)
-        vidcontent=soup.findAll('div', {"class" :re.compile('play-list')})
-        vidimage=soup.findAll('div', {"class" :re.compile('pic')})[0]
-        vidinfo=soup.findAll('div', {"class" :re.compile('info')})[0]
-
-        if(searchbyid == 1):
-            searchText = urllib.quote_plus(vidinfo.h1.contents[0].strip().encode('utf-8', 'ignore'))
-            if(len(searchText.strip())>0):
-                url = strdomain+'/index.php?m=vod-search&wd='+searchText
-                ListShows(url)
-                return                
+        vidcontent=soup.findAll('div', {"id" :re.compile('tab_con')})
+        vidimage=soup.findAll('img', {"class" :re.compile('poster-cover')})[0]
+ #       vidinfo=soup.findAll('span', {"id" :re.compile('fullContent')})[0]               
             
 
-        for item in vidcontent[0].findAll('li'):
-			if(item.span==None):
-				currentitem=item.a
+        for h4item in vidcontent[0].findAll('i'):
+                h4 = h4item.findAll('h4')[0]
+                if "土豆" not in h4.contents[0].encode('utf-8', 'ignore') and "tudou" not in h4.contents[0].encode('utf-8', 'ignore')  and "云播放" not in h4.contents[0].encode('utf-8', 'ignore')  and "mms" not in h4.contents[0].encode('utf-8', 'ignore') and "yky" not in h4.contents[0].encode('utf-8', 'ignore'):
+                        continue
+                for item in h4item.findAll('li'):
+			if(item.a==None):
+				continue
 			else:
-				currentitem=item.span.a
+				currentitem=item.a
 			vlink = currentitem['href'].encode('utf-8', 'ignore')
 			if(currentitem.span==None):
 				vname=currentitem.contents[0].encode('utf-8', 'ignore')
@@ -708,16 +865,18 @@ def Episodes(url,searchbyid=0,retry=0):
 				vname=currentitem.span.contents[0].encode('utf-8', 'ignore')
 			
 
-			vplot = vidinfo.h1.contents[0].strip()+"\n\n"
+			#vplot = vidinfo.h1.contents[0].strip()+"\n\n"
 
-			for x in vidinfo.dl.contents:
+			#for x in vidinfo.dl.contents:
          
-                            vplot += x.text
-                            vplot += "\n"
+    #                        vplot += x.text
+ #                           vplot += "\n"
 
-                        vplot=vplot.encode('utf-8', 'ignore')
+ #                       vplot=vplot.encode('utf-8', 'ignore')
 
-			addDir(vname,strdomain+vlink,32,strdomain+vidimage.img["src"],vplot)
+                
+                        vlinkfinal = strdomain+vlink
+			addDir(vname+h4.contents[0].encode('utf-8', 'ignore'),vlinkfinal,32,strdomain+vidimage["src"],'')
 
 
 	if len(vidcontent[0].findAll('li')) == 0:
@@ -735,6 +894,7 @@ def playVideo(url,name,movieinfo):
 
             PLAYLIST_VIDEOLINKS(vidurl, name)
         else:
+
             xbmcPlayer = xbmc.Player()
                              
             xbmcPlayer.play(vidurl)
