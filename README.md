@@ -1,9 +1,9 @@
 # tvbyy.com addon for Kodi
-Version 0.01 initial release 
+Version 0.02
 
 Credit to dknlght (https://github.com/dknlght/dkodi)
 
-You must apply the Tudou DNS Patch as follows:
+To play any videos from tudou, you must apply the Tudou DNS Patch as follows:
 
 Edit your DNS by updating your host file on your computer, rooted Android device, or on your router.
 
@@ -17,8 +17,6 @@ Edit your DNS by updating your host file on your computer, rooted Android device
 
 183.136.232.199 ad2f.tudou.com
 
-Search by keyword feature:
-Works for shows with English name only. No Chinese keyboard available.
 
-Search by ID feature:
+Go directly to show ID feature:
 Input the name of the .html page of the show in the URL. This is a 1 to 5 digit number.
