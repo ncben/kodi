@@ -740,6 +740,8 @@ def ListLatest(url,retry=0):
         newlink = ''.join(link.splitlines()).replace('\t','')
 
         soup = BeautifulSoup(newlink)
+
+        
         vidcontent=soup.findAll('div', {"class" : "class-best1"})
         for item in vidcontent[0].findAll('dl'):
 
@@ -771,6 +773,18 @@ def ListShows(url,retry=0):
         newlink = ''.join(link.splitlines()).replace('\t','')
 
         soup = BeautifulSoup(newlink)
+
+        print "url+"+url
+        if(url.find("/vod/") > -1):
+                
+                vname=soup.findAll('span', {"id" : "film_name"})
+
+                print vname
+                vimg=soup.findAll('img', {"class" : "poster-cover"})
+
+                print vimg
+                addDirContext(vname[0].contents[0].encode('utf-8', 'ignore'),url,8,strdomain+vimg[0]["src"],"","tvshow")
+                return
 
         if(url.find("time.html") < 0 and url.find("new.html") < 0):
             vidcontent=soup.findAll('div', {"class" : "imgListWrp"})[0].findAll('div', {"class" : "imglist02 cl"})
@@ -829,7 +843,7 @@ def SEARCH(url,type):
                 ListShows(url)
             elif(type == "id"):
                 url = strdomain+'/vod/'+searchText+'.html'
-                Episodes(url,1)
+                ListShows(url)
 		
 
 
