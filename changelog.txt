@@ -1,2 +1,4 @@
+0.0.2
+- Major update from tvbyy to yuezj.com
 0.0.1
 - Intial release
