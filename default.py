@@ -241,7 +241,7 @@ def GetMenu(retry=0):
 		
 def GetVideo(url, retry=0):
 
-    
+
         link = GetContent(url)
         try:
             link =link.encode("UTF-8")
@@ -306,13 +306,20 @@ def GetVideo(url, retry=0):
                         
                         if(int(thisNum) == j):
                             urlepisodeinfo = y.split("$")
+
+                            print "urlepisodeinfo"
+                            print urlepisodeinfo
                             if(len(urlepisodeinfo) > 2):
                                     if(urlepisodeinfo[2] == "tudou"):
                                         iframeurl = strdomain+"/player/tudou_t.php?u="+urlepisodeinfo[1]+"&f=tudou&w=100%&h=453"
                                         vid=urlepisodeinfo[1]
                                         
                                     elif(urlepisodeinfo[2] == "yky"):
-                                        iframeurl = "http://api.365sky.net/mdparse/url.php?xml="+urlepisodeinfo[1]+"&type=acfun&hd=gq&wap=0&siteuser=123"
+                                        iframeurl = "http://www.ktkkt.com/mdparse/acfun.php?id="+urlepisodeinfo[1]
+                                        vid=urlepisodeinfo[1]
+                                        
+                                    elif(urlepisodeinfo[2] == "bd2"):
+                                        iframeurl = "http://t2.tvbyy.com:88/"+urlepisodeinfo[1]+"/1/xml/index.xml"
                                         vid=urlepisodeinfo[1]
                                         
                                     else:
@@ -324,7 +331,10 @@ def GetVideo(url, retry=0):
                                         iframeurl = strdomain+"/player/tudou_t.php?u="+urlepisodeinfo[1]+"&f=tudou&w=100%&h=453"
                                         vid=urlepisodeinfo[1]
                                     elif(urlepisodeinfo[1].endswith("==")):
-                                        iframeurl = "http://api.365sky.net/mdparse/url.php?xml="+urlepisodeinfo[1]+"&type=acfun&hd=gq&wap=0&siteuser=123"
+                                        iframeurl = "http://www.ktkkt.com/mdparse/acfun.php?id="+urlepisodeinfo[1]
+                                        vid=urlepisodeinfo[1]
+                                    elif(urlepisodeinfo[1].startswith("eq_")):
+                                        iframeurl = "http://www.ktkkt.com/mdparse/acfun.php?id="+urlepisodeinfo[1]
                                         vid=urlepisodeinfo[1]
 
                                     else:
@@ -336,17 +346,23 @@ def GetVideo(url, retry=0):
                 i=i+1
                     
 
+
         
         if(iframeurl.find("/player/player.php?vid=") > -1):
 
+            print "iframeurl: "+iframeurl
 
+            
             xmlurl=strdomain+"/player/ning/api/?skey="+vid+"_nly"
+
+            print "xmlurl: "+ xmlurl
 
 
             xmllink = GetContent(xmlurl)
 
 
             xmlf = re.compile('f->["\']?([^>^"^\']+)["\']?[^>]*}').findall(xmllink)
+            
             xmldefatags = re.compile('defa->["\']?([^>^"^\']+)["\']?[^>]*}').findall(xmllink)
             xmldefttags = re.compile('deft->["\']?([^>^"^\']+)["\']?[^>]*}').findall(xmllink)
 
@@ -361,6 +377,9 @@ def GetVideo(url, retry=0):
                 j=j+1
 
         iframelink = GetContent(iframeurl)
+
+        print "iframelink"
+        print iframelink
 
         try:
                  iframelink =iframelink.encode("UTF-8")
@@ -420,6 +439,31 @@ def GetVideo(url, retry=0):
             j=0
             for defa in xmldefatagsarr:
                 addLink(xmldefttagsarr[j],"http://api.365sky.net/mdparse/url.php?"+HTMLParser.HTMLParser().unescape(defa),3,"")
+                j=j+1
+
+        if(iframeurl.find("t2.tvbyy") > -1):
+
+            playVideo(iframeurl, "", "")
+
+
+        if(iframeurl.find("www.ktkkt") > -1):
+
+
+            xmllink = GetContent("http://www.ktkkt.com/mdparse/url.php?xml="+vid+"&type=acfun&hd=gq&wap=0&siteuser=123")
+
+
+
+            xmldefatags = re.compile('defa-&gt;["\']?([^>^"^\']+)["\']?[^>]*}{').findall(xmllink)
+            xmldefttags = re.compile('deft-&gt;["\']?([^>^"^\']+)["\']?[^>]*}').findall(xmllink)
+
+
+
+            xmldefatagsarr = xmldefatags[0].split("|")
+            xmldefttagsarr = xmldefttags[0].split("|")
+
+            j=0
+            for defa in xmldefatagsarr:
+                addLink(xmldefttagsarr[j],"http://www.ktkkt.com/mdparse/url.php?"+HTMLParser.HTMLParser().unescape(defa),3,"")
                 j=j+1
                 
         if(iframeurl.find("/player/tudou_t.php") > -1):
@@ -534,6 +578,7 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
 
     redirlink=url
 
+    print "redirlink "+ redirlink
 
     try:
         if (redirlink.find("video.php") > -1):
@@ -563,7 +608,65 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
                         print "cd:"+ cd
                         vidlink = cd+useragent
 
+        elif (redirlink.find("www.ktkkt") > -1):
+
+                vidcontent = GetContent(url)
+
+                vidlinks=re.compile('<file>(.+?)</file>').findall(vidcontent)
+
+                vidlink = ''
+                
+                if(len(vidlinks)>1):
+                    j=0
+                    for v in vidlinks:
+                        soup = BeautifulSoup(vidlinks[j])
+                        for cd in soup.findAll(text=True):
+                            vidlinks[j] = cd+useragent
                         
+                        j=j+1
+
+                    vidlink=','.join(vidlinks)
+                    
+
+                else:
+                    soup = BeautifulSoup(vidlinks[0])
+
+                    for cd in soup.findAll(text=True):
+                        print "cd:"+ cd
+                        vidlink = cd
+
+
+        elif (redirlink.find("t2.tvbyy") > -1):
+ 
+                vidcontent = GetContent(url)
+
+        
+                vidcontent = ''.join(vidcontent.splitlines()).replace('\t','')
+
+                vidlinks=re.compile('<file>(.+?)</file>').findall(vidcontent)
+
+
+                vidlink = ''
+    
+                
+                if(len(vidlinks)>1):
+                    j=0
+                    for v in vidlinks:
+                        soup = BeautifulSoup(vidlinks[j])
+                        for cd in soup.findAll(text=True):
+                            vidlinks[j] = cd
+                        
+                        j=j+1
+
+                    vidlink=','.join(vidlinks)
+                    
+
+                else:
+                    soup = BeautifulSoup(vidlinks[0])
+
+                    for cd in soup.findAll(text=True):
+                        vidlink = cd
+
         
         elif (redirlink.find("ktkkt") > -1):
 
@@ -865,7 +968,7 @@ def Episodes(url,searchbyid=0,retry=0):
 
         for h4item in vidcontent[0].findAll('i'):
                 h4 = h4item.findAll('h4')[0]
-                if "土豆" not in h4.contents[0].encode('utf-8', 'ignore') and "tudou" not in h4.contents[0].encode('utf-8', 'ignore')  and "云播放" not in h4.contents[0].encode('utf-8', 'ignore')  and "mms" not in h4.contents[0].encode('utf-8', 'ignore') and "yky" not in h4.contents[0].encode('utf-8', 'ignore'):
+                if "土豆" not in h4.contents[0].encode('utf-8', 'ignore') and "tudou" not in h4.contents[0].encode('utf-8', 'ignore')  and "云播放" not in h4.contents[0].encode('utf-8', 'ignore')  and "mms" not in h4.contents[0].encode('utf-8', 'ignore') and "yky" not in h4.contents[0].encode('utf-8', 'ignore') and "189" not in h4.contents[0].encode('utf-8', 'ignore'):
                         continue
                 for item in h4item.findAll('li'):
 			if(item.a==None):
