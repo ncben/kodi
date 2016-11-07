@@ -1009,7 +1009,8 @@ def playVideo(url,name,movieinfo):
 
         if(vidurl.find(",") > -1):
 
-            PLAYLIST_VIDEOLINKS(vidurl, name)
+            
+	    PLAYLIST_VIDEOLINKS(vidurl, name)
         else:
 
             xbmcPlayer = xbmc.Player()
