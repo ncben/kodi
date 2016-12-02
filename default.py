@@ -315,7 +315,7 @@ def GetVideo(url, retry=0):
                                         vid=urlepisodeinfo[1]
                                         
                                     elif(urlepisodeinfo[2] == "yky"):
-                                        iframeurl = "http://www.ktkkt.com/mdparse/acfun.php?id="+urlepisodeinfo[1]
+                                        iframeurl = "http://a.100city.cc/mdparse5/acfun.php?id="+urlepisodeinfo[1]
                                         vid=urlepisodeinfo[1]
                                         
                                     elif(urlepisodeinfo[2] == "bd2"):
@@ -331,10 +331,10 @@ def GetVideo(url, retry=0):
                                         iframeurl = strdomain+"/player/tudou_t.php?u="+urlepisodeinfo[1]+"&f=tudou&w=100%&h=453"
                                         vid=urlepisodeinfo[1]
                                     elif(urlepisodeinfo[1].endswith("==")):
-                                        iframeurl = "http://www.ktkkt.com/mdparse/acfun.php?id="+urlepisodeinfo[1]
+                                        iframeurl = "http://a.100city.cc/mdparse5/acfun.php?id="+urlepisodeinfo[1]
                                         vid=urlepisodeinfo[1]
                                     elif(urlepisodeinfo[1].startswith("eq_")):
-                                        iframeurl = "http://www.ktkkt.com/mdparse/acfun.php?id="+urlepisodeinfo[1]
+                                        iframeurl = "http://a.100city.cc/mdparse5/acfun.php?id="+urlepisodeinfo[1]
                                         vid=urlepisodeinfo[1]
 
                                     else:
@@ -446,10 +446,10 @@ def GetVideo(url, retry=0):
             playVideo(iframeurl, "", "")
 
 
-        if(iframeurl.find("www.ktkkt") > -1):
+        if(iframeurl.find("a.100city.cc") > -1):
 
 
-            xmllink = GetContent("http://www.ktkkt.com/mdparse/url.php?xml="+vid+"&type=acfun&hd=gq&wap=0&siteuser=123")
+            xmllink = GetContent("http://a.100city.cc/mdparse5/url.php?xml="+vid+"&type=acfun&hd=gq&wap=0&siteuser=123")
 
 
 
@@ -463,7 +463,7 @@ def GetVideo(url, retry=0):
 
             j=0
             for defa in xmldefatagsarr:
-                addLink(xmldefttagsarr[j],"http://www.ktkkt.com/mdparse/url.php?"+HTMLParser.HTMLParser().unescape(defa),3,"")
+                addLink(xmldefttagsarr[j],"http://a.100city.cc/mdparse5/url.php?"+HTMLParser.HTMLParser().unescape(defa),3,"")
                 j=j+1
                 
         if(iframeurl.find("/player/tudou_t.php") > -1):
@@ -608,7 +608,7 @@ def ParseVideoLink(url,name,movieinfo,retry=0):
                         print "cd:"+ cd
                         vidlink = cd+useragent
 
-        elif (redirlink.find("www.ktkkt") > -1):
+        elif (redirlink.find("a.100city.cc") > -1):
 
                 vidcontent = GetContent(url)
 
