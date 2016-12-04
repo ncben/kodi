@@ -49,7 +49,7 @@ def convertascii(strInput, param2, param3):
 def GetContent(url,retry=0):
     try:
        net = Net()
-       second_response = net.http_GET(url, {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.73 Safari/537.3'})
+       second_response = net.http_GET(url, {'Referer': 'http://www.yuezj.com', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.73 Safari/537.3'})
        rcontent=second_response.content
        try:
             rcontent =rcontent.encode("UTF-8")
@@ -450,6 +450,8 @@ def GetVideo(url, retry=0):
 
 
             xmllink = GetContent("http://a.100city.cc/mdparse5/url.php?xml="+vid+"&type=acfun&hd=gq&wap=0&siteuser=123")
+
+            print "http://a.100city.cc/mdparse5/url.php?xml="+vid+"&type=acfun&hd=gq&wap=0&siteuser=123"
 
 
 
